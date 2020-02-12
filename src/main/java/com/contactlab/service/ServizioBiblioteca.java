@@ -9,6 +9,7 @@ import com.contactlab.data.Prestito;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -158,7 +159,7 @@ public class ServizioBiblioteca {
     public void modificaTelefonoResidenza(String telefono, String residenza) throws SQLException {
 
         try {
-            if (!telefono.isBlank()) {
+            if (StringUtils.isNotBlank(telefono)) {
 
                 PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
 
@@ -172,7 +173,7 @@ public class ServizioBiblioteca {
 
                 }
             }
-            if (!residenza.isBlank()) {
+            if (StringUtils.isNotBlank(residenza)) {
                 clienteDao.updateTelefonoResidenza(residenza, "residenza");
 
             }
