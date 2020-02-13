@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.SQLException;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 public class BibliotecaController {
@@ -21,7 +24,9 @@ public class BibliotecaController {
 
     /***********************************************************************************************/
 
-    /**  1. registrazione cliente  **/
+    /**
+     * 1. registrazione cliente
+     **/
 
     @GetMapping("/caricacliente")
     public void caricaCliente(@RequestParam(value = "fileCliente") String fileCliente) {
@@ -34,7 +39,9 @@ public class BibliotecaController {
 
     }
 
-    /** 2. registrazione libro  **/
+    /**
+     * 2. registrazione libro
+     **/
 
     @GetMapping("/caricalibro")
     public void caricaLibro(@RequestParam(value = "fileLibro") String fileLibro) {
@@ -47,7 +54,9 @@ public class BibliotecaController {
 
     }
 
-    /**  6. registrazione prestito  **/
+    /**
+     * 6. registrazione prestito
+     **/
 
     @GetMapping("/caricaprestiti")
     public void caricaPrestito(@RequestParam(value = "filePrestito") String filePrestito) {
@@ -60,7 +69,9 @@ public class BibliotecaController {
 
     }
 
-    /**   restituizione prestito  **/
+    /**
+     * restituizione prestito
+     **/
 
     @GetMapping("/restituisciprestiti")
     public void restituisciPrestito(@RequestParam(value = "fileRestituisci") String fileRestituisci) {
@@ -75,9 +86,9 @@ public class BibliotecaController {
 
 
     /**
-     *      3. modifica numero di telefono cliente
-     *      4. modifica email cliente
-     *      5. modifica residenza cliente
+     * 3. modifica numero di telefono cliente
+     * 4. modifica email cliente
+     * 5. modifica residenza cliente
      **/
 
     @GetMapping("/modificaCliente")
@@ -90,8 +101,9 @@ public class BibliotecaController {
     }
 
 
-
-    /** 7. verifica sul registro se ci sono presiti scaduti **/
+    /**
+     * 7. verifica sul registro se ci sono presiti scaduti
+     **/
 
 
     @GetMapping("/prestitiscaduti")
@@ -106,7 +118,9 @@ public class BibliotecaController {
     }
 
 
-    /** 9.  stampare tutti i libri prendendo in input l'autore **/
+    /**
+     * 9.  stampare tutti i libri prendendo in input l'autore
+     **/
 
     @GetMapping("/libroautore")
     public List<Libro> getLibroPerAutore(@RequestParam(value = "autore") String autore) throws SQLException {
@@ -115,7 +129,9 @@ public class BibliotecaController {
     }
 
 
-    /** 10. stampare tutti i clienti che hanno preso in prestito i libri di un autore passato in input **/
+    /**
+     * 10. stampare tutti i clienti che hanno preso in prestito i libri di un autore passato in input
+     **/
 
     @GetMapping("/clientiautore")
     public List<Cliente> getClientiAutore(@RequestParam(value = "autore") String autore) throws SQLException {
@@ -123,12 +139,88 @@ public class BibliotecaController {
         return servizioBiblioteca.getClientiPerAutore(autore);
     }
 
+    /**
+     * 11. stampare la classifica dei libri più chiesti in prestito (info libro + numero di prestiti)
+     **/
+
+
+    @GetMapping("/classificalibri")
+    public Map<Libro, Integer> getClassificaLibri() throws SQLException {
+
+        Map<Libro, Integer> mapLibro = servizioBiblioteca.classificaLibri();
+        Map<Libro, Integer> mapLibro2 = new HashMap<>();
+        mapLibro.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                forEach(stringIntegerEntry -> mapLibro2.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+
+        return mapLibro2;
+
+    }
+
+
+    /**
+     * 12. stampare la classifica dei clienti che hanno letto più libri (info clienti + numero libri letti)
+     **/
+
+    @GetMapping("/classificaclientilibri")
+    public Map<Cliente, Integer> getClassificaClientiLibri() throws SQLException {
+
+        Map<Cliente, Integer> mapClienti = servizioBiblioteca.classificaClienti();
+        Map<Cliente, Integer> mapClienti2 = new HashMap<>();
+
+        mapClienti.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                forEach(stringIntegerEntry -> mapClienti2.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+
+        return mapClienti2;
+
+    }
+
+
+    /**
+     * 13. stampare la classifica dei generi di libri più letti (genere + numero libri letti)
+     **/
+
+    @GetMapping("/classificagenerelibro")
+    public Map<String, Integer> getgenereLibro() throws SQLException {
+
+        Map<String, Integer> mapGenere = servizioBiblioteca.classificaGenereLibri();
+        Map<String, Integer> mapGenere2 = new HashMap<>();
+
+        mapGenere.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                forEach(stringIntegerEntry -> mapGenere2.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+
+        return mapGenere2;
+    }
+
+
+    /**
+     * 14. per ogni cliente, stampare la classifica dei generi più letti (genere + numero libri letti)
+     **/
+
+    @GetMapping("/classificaclientegenere")
+    public  Map<Cliente, Map<String, Integer>> getClientegenereLibro() throws SQLException {
 
 
 
 
+        Map<Cliente, Map<String, Integer>> map3 = servizioBiblioteca.classificaGenereLibriCliente();
+        Map<Cliente, Map<String, Integer>> map4 = new HashMap<>();
 
-    /** Stampa libri **/
+        map3.forEach((cliente, stringIntegerMap) -> {
+
+            Map<String, Integer> map = new HashMap<>();
+            stringIntegerMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                    forEach(stringIntegerEntry -> map.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
+            map4.put(cliente,map);
+        });
+
+        return map4;
+
+    }
+
+
+    /**
+     * Stampa libri
+     **/
 
     @GetMapping("/stampalibri")
     public List<Libro> getLibri() throws SQLException {
@@ -136,7 +228,9 @@ public class BibliotecaController {
         return servizioBiblioteca.trovaLibri();
     }
 
-    /** Stampa clienti **/
+    /**
+     * Stampa clienti
+     **/
 
     @GetMapping("/stampaclienti")
     public List<Cliente> getClienti() throws SQLException {
@@ -144,15 +238,15 @@ public class BibliotecaController {
         return servizioBiblioteca.trovaClienti();
     }
 
-    /** Stampa prestiti **/
+    /**
+     * Stampa prestiti
+     **/
 
     @GetMapping("/stampaprestiti")
     public List<Prestito> getPrestiti() throws SQLException {
 
-         return servizioBiblioteca.trovaPrestiti();
+        return servizioBiblioteca.trovaPrestiti();
     }
-
-
 
 
 }

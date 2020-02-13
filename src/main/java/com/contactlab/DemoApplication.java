@@ -31,7 +31,7 @@ public class DemoApplication implements ApplicationListener<ApplicationReadyEven
     @Override
     public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
 
-        Scanner scanner = new Scanner(System.in);
+   //     Scanner scanner = new Scanner(System.in);
 
 
         /*   *//**  1. registrazione cliente  **//*
