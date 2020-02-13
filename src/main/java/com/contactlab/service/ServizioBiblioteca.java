@@ -156,7 +156,7 @@ public class ServizioBiblioteca {
      * MODIFICA RESIDENZA E TELEFONO  ---> PUNTO 3
      **/
 
-    public void modificaTelefonoResidenza(String telefono, String residenza) throws SQLException {
+    public void modificaTelefonoResidenza(String telefono, String residenza, int idCliente) throws SQLException {
 
         try {
             if (StringUtils.isNotBlank(telefono)) {
@@ -169,12 +169,12 @@ public class ServizioBiblioteca {
 
                     telefono = phoneUtil.format(number, PhoneNumberUtil.PhoneNumberFormat.E164);
 
-                    clienteDao.updateTelefonoResidenza(telefono, "telefono");
+                    clienteDao.updateTelefonoResidenza(telefono, "telefono",idCliente);
 
                 }
             }
             if (StringUtils.isNotBlank(residenza)) {
-                clienteDao.updateTelefonoResidenza(residenza, "residenza");
+                clienteDao.updateTelefonoResidenza(residenza, "residenza",idCliente);
 
             }
 

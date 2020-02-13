@@ -73,9 +73,10 @@ public class ClienteDao {
 
     /*************************************************************/
 
-    public void updateTelefonoResidenza(String variabile, String tipo) throws SQLException {
-        PreparedStatement ps = connection.prepareStatement("UPDATE cliente SET " + tipo + " = ? ");
+    public void updateTelefonoResidenza(String variabile, String tipo, int idCliente) throws SQLException {
+        PreparedStatement ps = connection.prepareStatement("UPDATE cliente SET " + tipo + " = ?  where id_cliente = ?");
         ps.setString(1, variabile);
+        ps.setInt(2,idCliente);
 
 
         ps.executeUpdate();
