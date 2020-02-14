@@ -1,5 +1,6 @@
 package com.contactlab.service;
 
+import com.contactlab.controller.BibliotecaController;
 import com.contactlab.dao.ClienteDao;
 import com.contactlab.dao.LibroDao;
 import com.contactlab.dao.PrenotazioneDao;
@@ -10,6 +11,8 @@ import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +31,8 @@ import java.util.*;
 @Service
 public class ServizioBiblioteca {
 
+    private static final Logger logger = LoggerFactory.getLogger(ServizioBiblioteca.class);
+
     @Autowired
     private LibroDao libroDao;
 
@@ -43,12 +48,14 @@ public class ServizioBiblioteca {
      **/
 
     public boolean controlloEmail(String email) {
+        logger.info("Chiamata nel metodo controlloEmail");
         String regex = "^[\\w-_\\.+]*[\\w-_\\.]\\@([\\w]+\\.)+[\\w]+[\\w]$";
         return email.matches(regex);
     }
 
 
     public List<Cliente> trovaClienti() throws SQLException {
+
         return clienteDao.getClienti();
     }
 
@@ -92,8 +99,9 @@ public class ServizioBiblioteca {
                     }
                 }
             }
+            logger.info("I libri nel file sono stati caricati");
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IOException nel metodo caricaLibro", e);
         }
 
     }
@@ -147,8 +155,12 @@ public class ServizioBiblioteca {
                 } // fine if details.lenght
             } // fine while
 
-        } catch (IOException | ParseException | NumberParseException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            logger.error("IOException nel metodo caricaCliente", e);
+        } catch (ParseException e) {
+            logger.error("ParseException nel metodo caricaCliente", e);
+        } catch (NumberParseException e ) {
+            logger.error("NumberParseException nel metodo caricaCliente", e);
         }
     }
 
@@ -170,16 +182,16 @@ public class ServizioBiblioteca {
                     telefono = phoneUtil.format(number, PhoneNumberUtil.PhoneNumberFormat.E164);
 
                     clienteDao.updateTelefonoResidenza(telefono, "telefono",idCliente);
-
+                    logger.info("Telefono modificato");
                 }
             }
             if (StringUtils.isNotBlank(residenza)) {
                 clienteDao.updateTelefonoResidenza(residenza, "residenza",idCliente);
-
+                logger.info("residenza modificata");
             }
 
         } catch (NumberParseException e) {
-            e.printStackTrace();
+            logger.error("NumberParseException nel metodo modificaTelefonoResidenza", e);
 
         }
 
@@ -205,14 +217,17 @@ public class ServizioBiblioteca {
                     String autore = details[1];
                     String email = details[2];
 
-
+                    logger.info("Chiamata al metodo getIdCliente in base all'email");
                     Optional<Integer> idCliente = clienteDao.getIdCliente(email);
                     if (idCliente.isPresent()) {
+                        logger.info("L'id del cliente è stato trovato");
                         String disponibile = "true";
+                        logger.info("Chiamata al metodo getIdLibroDisponibile per verificare la disponibilità");
                         Optional<Integer> idLibro = libroDao.getIdLibroDisponibile(titolo, autore, disponibile);
                         if (idLibro.isPresent()) {
-
+                            logger.info("Il libro è disponibile");
                             String restituito = "false";
+                            logger.info("Chiamata al metodo getConteggio per sapere quanti libri sono stati prenotati dal cliente");
                             Optional<Integer> conteggioLibri = prenotazioneDao.getConteggio(idCliente.get(), restituito);
 
                             int conteggio = conteggioLibri.get();
@@ -221,11 +236,15 @@ public class ServizioBiblioteca {
                                 int idCliente2 = idCliente.get();
                                 int idLibro2 = idLibro.get();
                                 restituito = "false";
+                                logger.info("Chiamata al metodo insertPrestito per prenotare il libro");
                                 prenotazioneDao.insertPrestito(idLibro2, idCliente2, restituito);
+                                logger.info("Libro prenotato");
 
                                 String disponibilità = "false";
                                 libroDao.updateDisponibilitàLibro(autore, titolo, disponibilità);
-
+                                logger.info("la disponibilità del libro è stata settata a false dopo essere stato prenotato");
+                            } else {
+                                logger.error("Non si possono prenotare più di 3 libri ");
                             }
                         }
                     }
@@ -233,7 +252,7 @@ public class ServizioBiblioteca {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IOException nel metodo addPrestito", e);
         }
 
     }
@@ -244,6 +263,7 @@ public class ServizioBiblioteca {
      **/
     public void checkPrestitiScaduti() throws SQLException {
 
+        logger.info("Chiamata al metodo checkPrestitiScaduti ");
         List<Prestito> prestiti = prenotazioneDao.getPrestito();
         LocalDate dataOggi = LocalDate.now();
 
@@ -254,9 +274,9 @@ public class ServizioBiblioteca {
                 long days = ChronoUnit.DAYS.between(dataPrestito, dataOggi);
 
                 if (days > 30) {
-                    System.out.println("Il prestito per l'utente con id : " + prestito.getIdUtente() + " supera i 30 giorni");
+                    logger.info("Il prestito per l'utente con id : {} supera i 30 giorni", prestito.getIdUtente());
                 } else {
-                    System.out.println("Il prestito non supera i 30 giorni");
+                    logger.info("Il prestito non supera i 30 giorni");
                 }
             }
         }
@@ -268,6 +288,7 @@ public class ServizioBiblioteca {
      **/
     public void checkPrenotazioniPerUtente(String file) throws SQLException {
 
+        logger.info("Chiamata al metodo checkPrenotazioniPerUtente ");
         LocalDate dataOggi = LocalDate.now();
         LocalDate dataPrestito = null;
 
@@ -303,9 +324,9 @@ public class ServizioBiblioteca {
                                 long days = ChronoUnit.DAYS.between(dataPrestito, dataOggi);
 
                                 if (days > 30) {
-                                    System.out.println("Il prestito per l'utente con id : " + idCliente2 + " supera i 30 giorni");
+                                    logger.info("Il prestito per l'utente con id : {} supera i 30 giorni", idCliente2);
                                 } else {
-                                    System.out.println("Il prestito non supera i 30 giorni");
+                                    logger.info("Il prestito non supera i 30 giorni");
                                 }
 
                             }
@@ -316,9 +337,10 @@ public class ServizioBiblioteca {
 
             }
 
+            logger.info(" Fine Chiamata al metodo checkPrenotazioniPerUtente ");
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("IOException nel metodo checkPrenotazioniPerUtente ", e);
         }
 
     }
@@ -437,8 +459,7 @@ public class ServizioBiblioteca {
 
         System.out.println("Elenco Clienti + Numero libri letti, ordinati in ordine decrescente: ");
 
-        map2.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
-                forEach(stringIntegerEntry -> System.out.println(stringIntegerEntry.getKey() + " -> " + stringIntegerEntry.getValue()));
+        map2.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()));
 
         return map2;
     }
