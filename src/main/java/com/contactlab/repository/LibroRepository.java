@@ -13,8 +13,9 @@ import java.util.Optional;
 
         List<Libro> findAll();
         Optional<Libro> findLibroByTitoloAndAutore(String titolo, String autore);
-
-
+        Optional<Libro> findLibroByTitoloAndAutoreAndDisponibile(String titolo, String autore, String disponibile);
+        List<Libro> findLibroByAutore(String autore);
+        Optional<Libro> findLibroByIdLibro(Integer idLibro);
 
     }
 

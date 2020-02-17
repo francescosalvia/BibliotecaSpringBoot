@@ -1,27 +1,38 @@
 package com.contactlab.data;
 
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name="prestito")
 public class Prestito {
 
     @Id
+    @GeneratedValue(strategy= GenerationType.AUTO)
+    @Column(name = "id_prestito")
+    private Integer idPrestito;
     @Column(name = "id_cliente")
     private Integer idCliente;
     @Column(name = "id_libro")
     private Integer idLibro;
-    @Column(name = "data_insert")
-    private LocalDate dataPrestito;
+    @Column(name = "data_prestito")
+    private LocalDateTime dataPrestito;
     private String restituito;
 
     public Prestito() {
     }
+
+    public Prestito(Integer idCliente, Integer idLibro, LocalDateTime dataPrestito, String restituito) {
+        this.idCliente = idCliente;
+        this.idLibro = idLibro;
+        this.dataPrestito = dataPrestito;
+        this.restituito = restituito;
+    }
+
+
+
 
     public Integer getIdCliente() {
         return idCliente;
@@ -39,11 +50,11 @@ public class Prestito {
         this.idLibro = idLibro;
     }
 
-    public LocalDate getDataPrestito() {
+    public LocalDateTime getDataPrestito() {
         return dataPrestito;
     }
 
-    public void setDataPrestito(LocalDate dataPrestito) {
+    public void setDataPrestito(LocalDateTime dataPrestito) {
         this.dataPrestito = dataPrestito;
     }
 

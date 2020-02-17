@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.sql.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +77,7 @@ public class PrenotazioneDao
 
             int  idUtente = rs.getInt("id_cliente");
             int  idLibro = rs.getInt("id_libro");
-            LocalDate dataPrestito = rs.getTimestamp("data_insert").toLocalDateTime().toLocalDate();
+            LocalDateTime dataPrestito = rs.getTimestamp("data_insert").toLocalDateTime();
             String restituito = rs.getString("restituito");
 
             Prestito prestito = new Prestito();
@@ -105,7 +106,7 @@ public class PrenotazioneDao
         while (rs.next()) {
 
             int idUtente = rs.getInt("id_cliente");
-            LocalDate dataPrestito = rs.getTimestamp("data_insert").toLocalDateTime().toLocalDate();
+            LocalDateTime dataPrestito = rs.getTimestamp("data_insert").toLocalDateTime();
 
             prestito.setIdLibro(idLibro);
             prestito.setIdCliente(idUtente);

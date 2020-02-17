@@ -26,8 +26,10 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -54,9 +56,6 @@ public class ServizioBiblioteca {
     private PrestitoRepository prestitoRepository;
 
 
-
-
-
     /**
      * METODI UTILI
      **/
@@ -68,16 +67,16 @@ public class ServizioBiblioteca {
     }
 
 
-    public List<Cliente> trovaClienti() throws SQLException {
+    public List<Cliente> trovaClienti() {
 
         return clienteRepository.findAll();
     }
 
-    public List<Libro> trovaLibri() throws SQLException {
+    public List<Libro> trovaLibri() {
         return libroRepository.findAll();
     }
 
-    public List<Prestito> trovaPrestiti() throws SQLException {
+    public List<Prestito> trovaPrestiti() {
         return prestitoRepository.findAll();
     }
 
@@ -86,7 +85,7 @@ public class ServizioBiblioteca {
      * LEGGI FILE CON I LIBRI  -> PUNTO 1
      **/
 
-    public void caricaLibro(String file) throws SQLException {
+    public void caricaLibro(String file) {
 
         try {
             FileReader fr = new FileReader(file);
@@ -104,17 +103,17 @@ public class ServizioBiblioteca {
                     String genere = details[3];
                     String disponibile = details[4];
                     int dataa = Integer.parseInt(data);
-                   Optional<Libro> libroTrovato = libroRepository.findLibroByTitoloAndAutore(titolo,autore);
+                    Optional<Libro> libroTrovato = libroRepository.findLibroByTitoloAndAutore(titolo, autore);
 
                     if (libroTrovato.isPresent()) {
-                    Libro libro = libroTrovato.get();
-                    libro.setAnno(dataa);
-                    libro.setAutore(autore);
-                    libro.setGenere(genere);
-                    libro.setTitolo(titolo);
-                     libroRepository.save(libro);// disponibilità non la modifico per non influire su eventuali prestiti
+                        Libro libro = libroTrovato.get();
+                        libro.setAnno(dataa);
+                        libro.setAutore(autore);
+                        libro.setGenere(genere);
+                        libro.setTitolo(titolo);
+                        libroRepository.save(libro);// disponibilità non la modifico per non influire su eventuali prestiti
                     } else {
-                        Libro libro = new Libro(titolo,autore,dataa,genere,disponibile);
+                        Libro libro = new Libro(titolo, autore, dataa, genere, disponibile);
                         libroRepository.save(libro);
 
                     }
@@ -132,7 +131,7 @@ public class ServizioBiblioteca {
      * LEGGI FILE CON I CLIENTI --> PUNTO 2
      **/
 
-    public void caricaCliente(String file) throws SQLException {
+    public void caricaCliente(String file) {
         try {
             FileReader fr = new FileReader(file);
             BufferedReader br = new BufferedReader(fr);
@@ -163,12 +162,21 @@ public class ServizioBiblioteca {
                         telefono = phoneUtil.format(number, PhoneNumberUtil.PhoneNumberFormat.E164);
 
                         if (controlloEmail(email)) {
-                            Optional<Integer> idCliente = clienteDao.getIdCliente(email);
+                            Optional<Cliente> cliente = clienteRepository.findClienteByEmail(email);
 
-                            if (idCliente.isPresent()) {
-                                clienteDao.updateCliente(nome, cognome, sDate, luogoNascita, residenza, email, telefono, idCliente.get());
+                            if (cliente.isPresent()) {
+                                Cliente cliente1 = cliente.get();
+                                cliente1.setNome(nome);
+                                cliente1.setCognome(cognome);
+                                cliente1.setDataNascita(sDate);
+                                cliente1.setLuogoNascita(luogoNascita);
+                                cliente1.setEmail(email);
+                                cliente1.setResidenza(residenza);
+                                cliente1.setNumeroTelefono(telefono);
+                                clienteRepository.save(cliente1);
                             } else {
-                                clienteDao.insertCliente(nome, cognome, sDate, luogoNascita, residenza, email, telefono);
+                                Cliente cliente1 = new Cliente(nome, cognome, sDate, luogoNascita, residenza, email, telefono);
+                                clienteRepository.save(cliente1);
                             }
 
                         } // fine if controllo email
@@ -180,7 +188,7 @@ public class ServizioBiblioteca {
             logger.error("IOException nel metodo caricaCliente", e);
         } catch (ParseException e) {
             logger.error("ParseException nel metodo caricaCliente", e);
-        } catch (NumberParseException e ) {
+        } catch (NumberParseException e) {
             logger.error("NumberParseException nel metodo caricaCliente", e);
         }
     }
@@ -191,38 +199,45 @@ public class ServizioBiblioteca {
 
     public void modificaTelefonoResidenza(String telefono, String residenza, int idCliente) throws SQLException {
 
-        try {
-            if (StringUtils.isNotBlank(telefono)) {
+        Optional<Cliente> cliente = clienteRepository.findClienteByIdCliente(idCliente);
 
-                PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
+        if (cliente.isPresent()) {
 
-                Phonenumber.PhoneNumber number = phoneUtil.parse(telefono, "IT");
+            Cliente cliente1 = cliente.get();
+            try {
+                if (StringUtils.isNotBlank(telefono)) {
 
-                if (phoneUtil.isValidNumber(number)) {
+                    PhoneNumberUtil phoneUtil = PhoneNumberUtil.getInstance();
 
-                    telefono = phoneUtil.format(number, PhoneNumberUtil.PhoneNumberFormat.E164);
+                    Phonenumber.PhoneNumber number = phoneUtil.parse(telefono, "IT");
 
-                    clienteDao.updateTelefonoResidenza(telefono, "telefono",idCliente);
-                    logger.info("Telefono modificato");
+                    if (phoneUtil.isValidNumber(number)) {
+
+                        telefono = phoneUtil.format(number, PhoneNumberUtil.PhoneNumberFormat.E164);
+
+                        cliente1.setNumeroTelefono(telefono);
+                        clienteRepository.save(cliente1);
+                        logger.info("Telefono modificato");
+                    }
                 }
-            }
-            if (StringUtils.isNotBlank(residenza)) {
-                clienteDao.updateTelefonoResidenza(residenza, "residenza",idCliente);
-                logger.info("residenza modificata");
-            }
+                if (StringUtils.isNotBlank(residenza)) {
+                    cliente1.setResidenza(residenza);
+                    clienteRepository.save(cliente1);
+                    logger.info("residenza modificata");
+                }
 
-        } catch (NumberParseException e) {
-            logger.error("NumberParseException nel metodo modificaTelefonoResidenza", e);
+            } catch (NumberParseException e) {
+                logger.error("NumberParseException nel metodo modificaTelefonoResidenza", e);
+
+            }
 
         }
-
     }
-
 
     /**
      * PUNTO 6
      **/
-    public void addPrestito(String file) throws SQLException {
+    public void addPrestito(String file) {
 
         try {
             FileReader fr = new FileReader(file);
@@ -238,35 +253,41 @@ public class ServizioBiblioteca {
                     String autore = details[1];
                     String email = details[2];
 
-                    logger.info("Chiamata al metodo getIdCliente in base all'email");
-                    Optional<Integer> idCliente = clienteDao.getIdCliente(email);
-                    if (idCliente.isPresent()) {
-                        logger.info("L'id del cliente è stato trovato");
+                    logger.info("Chiamata al metodo getCliente in base all'email");
+                    Optional<Cliente> cliente = clienteRepository.findClienteByEmail(email);
+                    if (cliente.isPresent()) {
+                        logger.info("il cliente è stato trovato");
                         String disponibile = "true";
-                        logger.info("Chiamata al metodo getIdLibroDisponibile per verificare la disponibilità");
-                        Optional<Integer> idLibro = libroDao.getIdLibroDisponibile(titolo, autore, disponibile);
-                        if (idLibro.isPresent()) {
+                        logger.info("Chiamata al metodo getLibro per verificare la disponibilità");
+                        Optional<Libro> libro = libroRepository.findLibroByTitoloAndAutoreAndDisponibile(titolo, autore, disponibile);
+                        if (libro.isPresent()) {
                             logger.info("Il libro è disponibile");
                             String restituito = "false";
                             logger.info("Chiamata al metodo getConteggio per sapere quanti libri sono stati prenotati dal cliente");
-                            Optional<Integer> conteggioLibri = prenotazioneDao.getConteggio(idCliente.get(), restituito);
 
-                            int conteggio = conteggioLibri.get();
+                            long conteggioLibri = prestitoRepository.countByIdClienteAndRestituito(cliente.get().getIdCliente(), restituito);
 
-                            if (conteggio < 3) {
-                                int idCliente2 = idCliente.get();
-                                int idLibro2 = idLibro.get();
+                            if (conteggioLibri < 3) {
+                                int idCliente2 = cliente.get().getIdCliente();
+                                int idLibro2 = libro.get().getIdLibro();
                                 restituito = "false";
-                                logger.info("Chiamata al metodo insertPrestito per prenotare il libro");
-                                prenotazioneDao.insertPrestito(idLibro2, idCliente2, restituito);
+                                logger.info("Chiamata al metodo save Prestito per prenotare il libro");
+                                Prestito prestito = new Prestito(idCliente2, idLibro2, LocalDateTime.now(), restituito);
+                                prestitoRepository.save(prestito);
                                 logger.info("Libro prenotato");
 
-                                String disponibilità = "false";
-                                libroDao.updateDisponibilitàLibro(autore, titolo, disponibilità);
+                                String disponibilita = "false";
+
+                                Libro libro1 = libro.get();
+                                libro1.setDisponibile(disponibilita);
+
+                                libroRepository.save(libro1);
                                 logger.info("la disponibilità del libro è stata settata a false dopo essere stato prenotato");
                             } else {
                                 logger.error("Non si possono prenotare più di 3 libri ");
                             }
+                        } else {
+                            logger.info("Libro non disponibile");
                         }
                     }
                 }
@@ -282,14 +303,15 @@ public class ServizioBiblioteca {
     /**
      * PUNTO 7
      **/
-    public void checkPrestitiScaduti() throws SQLException {
+    public void checkPrestitiScaduti() {
 
         logger.info("Chiamata al metodo checkPrestitiScaduti ");
-        List<Prestito> prestiti = prenotazioneDao.getPrestito();
+
+        List<Prestito> prestiti = prestitoRepository.findAll();
         LocalDate dataOggi = LocalDate.now();
 
         for (Prestito prestito : prestiti) {
-            LocalDate dataPrestito = prestito.getDataPrestito();
+            LocalDate dataPrestito = prestito.getDataPrestito().toLocalDate();
 
             if (dataPrestito != null) {
                 long days = ChronoUnit.DAYS.between(dataPrestito, dataOggi);
@@ -307,7 +329,7 @@ public class ServizioBiblioteca {
     /**
      * PUNTO 8
      **/
-    public void checkPrenotazioniPerUtente(String file) throws SQLException {
+    public void checkPrenotazioniPerUtente(String file) {
 
         logger.info("Chiamata al metodo checkPrenotazioniPerUtente ");
         LocalDate dataOggi = LocalDate.now();
@@ -327,29 +349,30 @@ public class ServizioBiblioteca {
                     String autore = details[1];
                     String email = details[2];
 
-                    Optional<Integer> idCliente = clienteDao.getIdCliente(email);
-                    if (idCliente.isPresent()) {
+                    Optional<Cliente> cliente = clienteRepository.findClienteByEmail(email);
+                    if (cliente.isPresent()) {
                         String disponibile = "false";
-                        Optional<Integer> idLibro = libroDao.getIdLibroDisponibile(titolo, autore, disponibile);
-                        if (idLibro.isPresent()) {
-                            int idCliente2 = idCliente.get();
-                            int idLibro2 = idLibro.get();
+                        Optional<Libro> libro = libroRepository.findLibroByTitoloAndAutoreAndDisponibile(titolo, autore, disponibile);
+                        if (libro.isPresent()) {
+                            int idCliente2 = cliente.get().getIdCliente();
+                            int idLibro2 = libro.get().getIdLibro();
 
-                            Optional<Timestamp> dataFromGet = prenotazioneDao.getDataPrestito(idLibro2, idCliente2);
+                            Optional<Prestito> prestito = prestitoRepository.findPrestitoByIdClienteAndIdLibro(idLibro2, idCliente2);
 
-                            if (dataFromGet.isPresent()) {
-                                dataPrestito = dataFromGet.get().toLocalDateTime().toLocalDate();
-                            }
+                            if (prestito.isPresent()) {
 
-                            if (dataPrestito != null) {
-                                long days = ChronoUnit.DAYS.between(dataPrestito, dataOggi);
+                                dataPrestito = prestito.get().getDataPrestito().toLocalDate();
 
-                                if (days > 30) {
-                                    logger.info("Il prestito per l'utente con id : {} supera i 30 giorni", idCliente2);
-                                } else {
-                                    logger.info("Il prestito non supera i 30 giorni");
+                                if (dataPrestito != null) {
+                                    long days = ChronoUnit.DAYS.between(dataPrestito, dataOggi);
+
+                                    if (days > 30) {
+                                        logger.info("Il prestito per l'utente con id : {} supera i 30 giorni", idCliente2);
+                                    } else {
+                                        logger.info("Il prestito non supera i 30 giorni");
+                                    }
+
                                 }
-
                             }
                         }
                     }
@@ -369,30 +392,29 @@ public class ServizioBiblioteca {
     /**
      * PUNTO 9
      **/
-    public List<Libro> getLibroPerAutore(String autore) throws SQLException {
-
-        return libroDao.getLibroPerAutore(autore);
+    public List<Libro> getLibroPerAutore(String autore) {
+        return libroRepository.findLibroByAutore(autore);
     }
 
     /**
      * PUNTO 10
      **/
-    public List<Cliente> getClientiPerAutore(String autore) throws SQLException {
+    public List<Cliente> getClientiPerAutore(String autore) {
 
         List<Cliente> clienti = new ArrayList<>();
         List<Prestito> prestiti = new ArrayList<>();
 
-
         List<Libro> libri = getLibroPerAutore(autore);
-        for (int i = 0; i < libri.size(); i++) {
 
-            Optional<Prestito> prestito = prenotazioneDao.getPrestitoPerIdLibro(libri.get(i).getIdLibro());
+        for (Libro libro : libri) {
+
+            Optional<Prestito> prestito = prestitoRepository.findPrestitoByIdLibro(libro.getIdLibro());
             prestito.ifPresent(prestiti::add);
         }
 
-        for (int i = 0; i < prestiti.size(); i++) {
+        for (Prestito prestito : prestiti) {
 
-            Optional<Cliente> cliente = clienteDao.getClientiPerId(prestiti.get(i).getIdCliente());
+            Optional<Cliente> cliente = clienteRepository.findClienteByIdCliente(prestito.getIdCliente());
             cliente.ifPresent(clienti::add);
         }
 
@@ -402,9 +424,9 @@ public class ServizioBiblioteca {
     /**
      * PUNTO 11
      **/
-    public Map<Libro, Integer> classificaLibri() throws SQLException {
+    public Map<Libro, Integer> classificaLibri() {
 
-        List<Prestito> prestiti = prenotazioneDao.getPrestito();
+        List<Prestito> prestiti = prestitoRepository.findAll();
 
         Map<Libro, List<Prestito>> map = new HashMap<>();
 
@@ -414,7 +436,7 @@ public class ServizioBiblioteca {
             Libro libro;
             int idLibro = prestito.getIdLibro();
 
-            Optional<Libro> libro2 = libroDao.getLibroPerID(idLibro);
+            Optional<Libro> libro2 = libroRepository.findLibroByIdLibro(idLibro);
 
             if (libro2.isPresent()) {
 
@@ -434,31 +456,29 @@ public class ServizioBiblioteca {
         Map<Libro, Integer> map2 = new HashMap<>();
         map.forEach((k, v) -> map2.put(k, v.size()));
 
-        System.out.println("Elenco Libri + Numero elementi che hanno quel libro, ordinati in ordine decrescente: ");
+        logger.info("Elenco Libri + Numero elementi che hanno quel libro, ordinati in ordine decrescente: ");
 
-        map2.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
-                forEach(stringIntegerEntry -> System.out.println(stringIntegerEntry.getKey() + " -> " + stringIntegerEntry.getValue()));
-
-        return map2;
+        return map2.entrySet()
+                .stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                        collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
     }
 
 
     /**
      * PUNTO 12
      **/
-    public Map<Cliente, Integer> classificaClienti() throws SQLException {
+    public Map<Cliente, Integer> classificaClienti() {
 
-        List<Prestito> prestiti = prenotazioneDao.getPrestito();
+        List<Prestito> prestiti = prestitoRepository.findAll();
 
         Map<Cliente, List<Prestito>> map = new HashMap<>();
 
-
-        for (int i = 0; i < prestiti.size(); i++) {
+        for (Prestito prestito : prestiti) {
 
             Cliente cliente;
-            int idCliente = prestiti.get(i).getIdCliente();
+            int idCliente = prestito.getIdCliente();
 
-            Optional<Cliente> cliente2 = clienteDao.getClientiPerId(idCliente);
+            Optional<Cliente> cliente2 = clienteRepository.findClienteByIdCliente(idCliente);
 
             if (cliente2.isPresent()) {
 
@@ -466,10 +486,10 @@ public class ServizioBiblioteca {
 
                 if (map.containsKey(cliente)) {
                     List<Prestito> prestitoBis = map.get(cliente);
-                    prestitoBis.add(prestiti.get(i));
+                    prestitoBis.add(prestito);
                 } else {
                     List<Prestito> prestitoBis = new ArrayList<>();
-                    prestitoBis.add(prestiti.get(i));
+                    prestitoBis.add(prestito);
                     map.put(cliente, prestitoBis);
                 }
             }
@@ -478,11 +498,12 @@ public class ServizioBiblioteca {
         Map<Cliente, Integer> map2 = new HashMap<>();
         map.forEach((k, v) -> map2.put(k, v.size()));
 
-        System.out.println("Elenco Clienti + Numero libri letti, ordinati in ordine decrescente: ");
+        logger.info("Elenco Clienti + Numero libri letti, ordinati in ordine decrescente: ");
 
-        map2.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()));
+        return map2.entrySet()
+                .stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                        collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
 
-        return map2;
     }
 
 
@@ -490,31 +511,33 @@ public class ServizioBiblioteca {
      * PUNTO 13
      **/
 
-    public Map<String, Integer> classificaGenereLibri() throws SQLException {
+    public Map<String, Integer> classificaGenereLibri() {
 
-        List<Prestito> prestiti = prenotazioneDao.getPrestito();
+        List<Prestito> prestiti = prestitoRepository.findAll();
 
         Map<String, List<Prestito>> map = new HashMap<>();
 
 
-        for (int i = 0; i < prestiti.size(); i++) {
+        for (Prestito prestito : prestiti) {
 
             String genere;
-            int idLibro = prestiti.get(i).getIdLibro();
+            int idLibro = prestito.getIdLibro();
 
-            Optional<String> genere2 = libroDao.getGenerePerId(idLibro);
+            Optional<Libro> libro = libroRepository.findLibroByIdLibro(idLibro);
 
-            if (genere2.isPresent()) {
+            if (libro.isPresent()) {
 
-                genere = genere2.get();
+                genere = libro.get().getGenere();
 
-                if (map.containsKey(genere)) {
-                    List<Prestito> prestitoBis = map.get(genere);
-                    prestitoBis.add(prestiti.get(i));
-                } else {
-                    List<Prestito> prestitoBis = new ArrayList<>();
-                    prestitoBis.add(prestiti.get(i));
-                    map.put(genere, prestitoBis);
+                if (StringUtils.isNotBlank(genere)) {
+                    if (map.containsKey(genere)) {
+                        List<Prestito> prestitoBis = map.get(genere);
+                        prestitoBis.add(prestito);
+                    } else {
+                        List<Prestito> prestitoBis = new ArrayList<>();
+                        prestitoBis.add(prestito);
+                        map.put(genere, prestitoBis);
+                    }
                 }
             }
         }
@@ -522,9 +545,11 @@ public class ServizioBiblioteca {
         Map<String, Integer> map2 = new HashMap<>();
         map.forEach((k, v) -> map2.put(k, v.size()));
 
-        System.out.println("Elenco genere libro + Numero di libri con quel genere, ordinati in ordine decrescente: ");
+        logger.info("Elenco genere libro + Numero di libri con quel genere, ordinati in ordine decrescente: ");
 
-        return map2;
+
+        return map2.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
     }
 
 
@@ -532,43 +557,41 @@ public class ServizioBiblioteca {
      * PUNTO 14
      **/
 
-    public Map<Cliente, Map<String, Integer>> classificaGenereLibriCliente() throws SQLException {
+    public Map<Cliente, Map<String, Integer>> classificaGenereLibriCliente() {
 
-        List<Prestito> prestiti = prenotazioneDao.getPrestito();
-        List<Cliente> clienti = clienteDao.getClienti();
+        List<Prestito> prestiti = prestitoRepository.findAll();
+        List<Cliente> clienti = clienteRepository.findAll();
 
         Map<String, List<Prestito>> map;
 
         Map<Cliente, Map<String, Integer>> map3 = new HashMap<>();
 
-        for (int j = 0; j < clienti.size(); j++) {
-
-            Cliente cliente = clienti.get(j);
+        for (Cliente cliente : clienti) {
 
             int idCliente = cliente.getIdCliente();
             map = new HashMap<>();
-            for (int i = 0; i < prestiti.size(); i++) {
+            for (Prestito prestito : prestiti) {
 
-
-                if (idCliente == prestiti.get(i).getIdCliente()) {
-
+                if (idCliente == prestito.getIdCliente()) {
 
                     String genere;
-                    int idLibro = prestiti.get(i).getIdLibro();
+                    int idLibro = prestito.getIdLibro();
 
-                    Optional<String> genere2 = libroDao.getGenerePerId(idLibro);
+                    Optional<Libro> libro = libroRepository.findLibroByIdLibro(idLibro);
 
-                    if (genere2.isPresent()) {
+                    if (libro.isPresent()) {
 
-                        genere = genere2.get();
+                        genere = libro.get().getGenere();
 
-                        if (map.containsKey(genere)) {
-                            List<Prestito> prestitoBis = map.get(genere);
-                            prestitoBis.add(prestiti.get(i));
-                        } else {
-                            List<Prestito> prestitoBis = new ArrayList<>();
-                            prestitoBis.add(prestiti.get(i));
-                            map.put(genere, prestitoBis);
+                        if (StringUtils.isNotBlank(genere)) {
+                            if (map.containsKey(genere)) {
+                                List<Prestito> prestitoBis = map.get(genere);
+                                prestitoBis.add(prestito);
+                            } else {
+                                List<Prestito> prestitoBis = new ArrayList<>();
+                                prestitoBis.add(prestito);
+                                map.put(genere, prestitoBis);
+                            }
                         }
                     }
                 }
@@ -579,13 +602,19 @@ public class ServizioBiblioteca {
 
             map.forEach((k, v) -> map2.put(k, v.size()));
             map2.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()));
-
-
             map3.put(cliente, map2);
-
         }
 
-        return map3;
+        Map<Cliente, Map<String, Integer>> map4 = new HashMap<>();
+
+        map3.forEach((cliente1, stringIntegerMap) -> {
+            Map<String, Integer> mapp = stringIntegerMap.entrySet()
+                    .stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
+                            collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (oldValue, newValue) -> oldValue, LinkedHashMap::new));
+            map4.put(cliente1, mapp);
+        });
+
+        return map4;
     }
 
 
@@ -593,8 +622,8 @@ public class ServizioBiblioteca {
      * METODO STAMPA TUTTI I LIBRI
      **/
 
-    public void stampaLibro() throws SQLException {
-        List<Libro> libri = libroDao.getLibro();
+    public void stampaLibro() {
+        List<Libro> libri = libroRepository.findAll();
 
         for (Libro libro : libri) {
             System.out.println(libro.toString());
@@ -602,7 +631,7 @@ public class ServizioBiblioteca {
     }
 
 
-    public void restituisciLibro(String file) throws SQLException {
+    public void restituisciLibro(String file) {
 
         try {
             FileReader fr = new FileReader(file);
@@ -619,20 +648,37 @@ public class ServizioBiblioteca {
                     String autore = details[1];
                     String email = details[2];
 
-                    Optional<Integer> idCliente = clienteDao.getIdCliente(email);
-                    if (idCliente.isPresent()) {
-                        String disponibile = "false";
-                        Optional<Integer> idLibro = libroDao.getIdLibroDisponibile(titolo, autore, disponibile);
-                        if (idLibro.isPresent()) {
-                            int idCliente2 = idCliente.get();
-                            int idLibro2 = idLibro.get();
-                            String restituito = "true";
-                            prenotazioneDao.updatePrestito(idLibro2, idCliente2, restituito);
-                            String disponibilità = "true";
-                            libroDao.updateDisponibilitàLibro(autore, titolo, disponibilità);
-                        }
-                    }
+                    Optional<Cliente> cliente = clienteRepository.findClienteByEmail(email);
 
+                    if (cliente.isPresent()) {
+
+                        int idCliente = cliente.get().getIdCliente();
+                        String disponibile = "false";
+
+                        Optional<Libro> libro = libroRepository.findLibroByTitoloAndAutoreAndDisponibile(titolo, autore, disponibile);
+
+                        if (libro.isPresent()) {
+                            int idLibro = libro.get().getIdLibro();
+                            String restituito = "true";
+
+                            Optional<Prestito> prestito = prestitoRepository.findPrestitoByIdClienteAndIdLibro(idCliente, idLibro);
+
+                            if (prestito.isPresent()) {
+
+                                Prestito prestito1 = prestito.get();
+                                prestito1.setRestituito(restituito);
+                                prestitoRepository.save(prestito1);
+
+                                String disponibilita = "true";
+
+                                Libro libro1 = libro.get();
+                                libro1.setDisponibile(disponibilita);
+
+                                libroRepository.save(libro1);
+                            }
+                        }
+
+                    }
                 }
 
             }

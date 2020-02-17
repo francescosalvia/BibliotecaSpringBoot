@@ -15,10 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.sql.SQLException;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public class BibliotecaController {
@@ -35,17 +33,12 @@ public class BibliotecaController {
      * 1. registrazione cliente
      **/
 
-    @GetMapping("/caricacliente")
+    @GetMapping("/caricacliente")  // C:\\Users\\francesco.salvia\\Desktop\\BIBLIOTECA\\clienti.txt
     public ResponseEntity<Void> caricaCliente(@RequestParam(value = "fileCliente") String fileCliente) {
 
         logger.info("Chiamata nel metodo caricaCliente");
 
-        try {
-            servizioBiblioteca.caricaCliente(fileCliente);
-
-        } catch (SQLException e) {
-            logger.error("SQLException nel metodo caricaCliente ", e);
-        }
+        servizioBiblioteca.caricaCliente(fileCliente);
 
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
@@ -54,16 +47,12 @@ public class BibliotecaController {
      * 2. registrazione libro
      **/
 
-    @GetMapping("/caricalibro")
+    @GetMapping("/caricalibro") // C:\\Users\\francesco.salvia\\Desktop\\BIBLIOTECA\\libri.txt
     public void caricaLibro(@RequestParam(value = "fileLibro") String fileLibro) {
 
         logger.info("Chiamata nel metodo caricaLibro");
 
-        try {
-            servizioBiblioteca.caricaLibro(fileLibro);
-        } catch (SQLException e) {
-            logger.error("SQLException nel metodo caricaLibro ", e);
-        }
+        servizioBiblioteca.caricaLibro(fileLibro);
 
     }
 
@@ -71,16 +60,12 @@ public class BibliotecaController {
      * 6. registrazione prestito
      **/
 
-    @GetMapping("/caricaprestiti")
+    @GetMapping("/caricaprestiti")    // C:\\Users\\francesco.salvia\\Desktop\\BIBLIOTECA\\prestito.txt
     public void caricaPrestito(@RequestParam(value = "filePrestito") String filePrestito) {
 
         logger.info("Chiamata nel metodo caricaPrestito");
 
-        try {
-            servizioBiblioteca.addPrestito(filePrestito);
-        } catch (SQLException e) {
-            logger.error("SQLException nel metodo caricaPrestito ", e);
-        }
+        servizioBiblioteca.addPrestito(filePrestito);
 
     }
 
@@ -91,11 +76,7 @@ public class BibliotecaController {
     @GetMapping("/restituisciprestiti")
     public void restituisciPrestito(@RequestParam(value = "fileRestituisci") String fileRestituisci) {
         logger.info("Chiamata nel metodo restituisciPrestito");
-        try {
-            servizioBiblioteca.restituisciLibro(fileRestituisci);
-        } catch (SQLException e) {
-            logger.error("SQLException nel metodo restituisciPrestito ", e);
-        }
+        servizioBiblioteca.restituisciLibro(fileRestituisci);
 
     }
 
@@ -122,17 +103,24 @@ public class BibliotecaController {
      * 7. verifica sul registro se ci sono presiti scaduti
      **/
 
-
     @GetMapping("/prestitiscaduti")
+    public void prestitiScaduti() {
+
+        logger.info("Chiamata nel metodo prestitiScaduti");
+
+        servizioBiblioteca.checkPrestitiScaduti();
+
+    }
+
+    /**
+     * 8. verifica sul registro se ci sono presiti scaduti per utente
+     **/
+
+    @GetMapping("/prestitiscadutiutente")
     public void prestitiScaduti(@RequestParam(value = "fileCheckPrenotazioni") String fileCheckPrenotazioni) {
 
         logger.info("Chiamata nel metodo prestitiScaduti");
-        try {
-            servizioBiblioteca.checkPrenotazioniPerUtente(fileCheckPrenotazioni);
-        } catch (SQLException e) {
-            logger.error("SQLException nel metodo prestitiScaduti ", e);
-        }
-
+        servizioBiblioteca.checkPrenotazioniPerUtente(fileCheckPrenotazioni);
     }
 
 
@@ -141,7 +129,7 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/libroautore")
-    public List<Libro> getLibroPerAutore(@RequestParam(value = "autore") String autore) throws SQLException {
+    public List<Libro> getLibroPerAutore(@RequestParam(value = "autore") String autore) {
 
         logger.info("Chiamata nel metodo getLibroPerAutore");
         return servizioBiblioteca.getLibroPerAutore(autore);
@@ -153,7 +141,7 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/clientiautore")
-    public List<Cliente> getClientiAutore(@RequestParam(value = "autore") String autore) throws SQLException {
+    public List<Cliente> getClientiAutore(@RequestParam(value = "autore") String autore) {
 
         logger.info("Chiamata nel metodo getClientiAutore");
         return servizioBiblioteca.getClientiPerAutore(autore);
@@ -165,15 +153,11 @@ public class BibliotecaController {
 
 
     @GetMapping("/classificalibri")
-    public Map<Libro, Integer> getClassificaLibri() throws SQLException {
+    public Map<Libro, Integer> getClassificaLibri() {
 
         logger.info("Chiamata nel metodo getClassificaLibri");
-        Map<Libro, Integer> mapLibro = servizioBiblioteca.classificaLibri();
-        Map<Libro, Integer> mapLibro2 = new HashMap<>();
-        mapLibro.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
-                forEach(stringIntegerEntry -> mapLibro2.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
 
-        return mapLibro2;
+        return servizioBiblioteca.classificaLibri();
 
     }
 
@@ -183,17 +167,11 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/classificaclientilibri")
-    public Map<Cliente, Integer> getClassificaClientiLibri() throws SQLException {
+    public Map<Cliente, Integer> getClassificaClientiLibri() {
 
         logger.info("Chiamata nel metodo getClassificaClientiLibri");
-        Map<Cliente, Integer> mapClienti = servizioBiblioteca.classificaClienti();
-        Map<Cliente, Integer> mapClienti2 = new HashMap<>();
 
-        mapClienti.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
-                forEach(stringIntegerEntry -> mapClienti2.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
-
-        return mapClienti2;
-
+        return servizioBiblioteca.classificaClienti();
     }
 
 
@@ -202,16 +180,11 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/classificagenerelibro")
-    public Map<String, Integer> getgenereLibro() throws SQLException {
+    public Map<String, Integer> getgenereLibro() {
 
         logger.info("Chiamata nel metodo getgenereLibro");
-        Map<String, Integer> mapGenere = servizioBiblioteca.classificaGenereLibri();
-        Map<String, Integer> mapGenere2 = new HashMap<>();
 
-        mapGenere.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
-                forEach(stringIntegerEntry -> mapGenere2.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
-
-        return mapGenere2;
+        return servizioBiblioteca.classificaGenereLibri();
     }
 
 
@@ -220,22 +193,10 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/classificaclientegenere")
-    public  Map<Cliente, Map<String, Integer>> getClientegenereLibro() throws SQLException {
+    public Map<Cliente, Map<String, Integer>> getClientegenereLibro() {
 
         logger.info("Chiamata nel metodo getClientegenereLibro");
-        Map<Cliente, Map<String, Integer>> map3 = servizioBiblioteca.classificaGenereLibriCliente();
-        Map<Cliente, Map<String, Integer>> map4 = new HashMap<>();
-
-        map3.forEach((cliente, stringIntegerMap) -> {
-
-            Map<String, Integer> map = new HashMap<>();
-            stringIntegerMap.entrySet().stream().sorted(Map.Entry.comparingByValue(Comparator.reverseOrder())).
-                    forEach(stringIntegerEntry -> map.put(stringIntegerEntry.getKey(), stringIntegerEntry.getValue()));
-            map4.put(cliente,map);
-        });
-
-        return map4;
-
+        return servizioBiblioteca.classificaGenereLibriCliente();
     }
 
     /**
@@ -243,7 +204,7 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/stampalibri")
-    public List<Libro> getLibri() throws SQLException {
+    public List<Libro> getLibri() {
         logger.info("Chiamata nel metodo getLibri");
         return servizioBiblioteca.trovaLibri();
     }
@@ -253,9 +214,9 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/stampaclienti")
-    public ResponseEntity<List<Cliente>> getClienti() throws SQLException {
+    public ResponseEntity<List<Cliente>> getClienti() {
         logger.info("Chiamata nel metodo getClienti");
-        return new ResponseEntity<>(servizioBiblioteca.trovaClienti(),HttpStatus.OK) ;
+        return new ResponseEntity<>(servizioBiblioteca.trovaClienti(), HttpStatus.OK);
     }
 
     /**
@@ -263,7 +224,7 @@ public class BibliotecaController {
      **/
 
     @GetMapping("/stampaprestiti")
-    public List<Prestito> getPrestiti() throws SQLException {
+    public List<Prestito> getPrestiti() {
         logger.info("Chiamata nel metodo getPrestiti");
         return servizioBiblioteca.trovaPrestiti();
     }
