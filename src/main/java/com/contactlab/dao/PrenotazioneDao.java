@@ -81,7 +81,7 @@ public class PrenotazioneDao
 
             Prestito prestito = new Prestito();
             prestito.setIdLibro(idLibro);
-            prestito.setIdUtente(idUtente);
+            prestito.setIdCliente(idUtente);
             prestito.setDataPrestito(dataPrestito);
             prestito.setRestituito(restituito);
 
@@ -108,7 +108,7 @@ public class PrenotazioneDao
             LocalDate dataPrestito = rs.getTimestamp("data_insert").toLocalDateTime().toLocalDate();
 
             prestito.setIdLibro(idLibro);
-            prestito.setIdUtente(idUtente);
+            prestito.setIdCliente(idUtente);
             prestito.setDataPrestito(dataPrestito);
 
             prestito1 = Optional.of(prestito);

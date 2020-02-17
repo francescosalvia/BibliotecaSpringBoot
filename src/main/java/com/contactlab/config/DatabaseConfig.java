@@ -1,7 +1,7 @@
 package com.contactlab.config;
 
 import com.contactlab.Properties.DataSourceProperties;
-import com.mysql.jdbc.jdbc2.optional.MysqlDataSource;
+import com.mysql.cj.jdbc.MysqlDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +28,6 @@ public class DatabaseConfig {
 
         return dataSource.getConnection();
     }
-
 
 
 }

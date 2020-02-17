@@ -1,18 +1,29 @@
 package com.contactlab.data;
 
+import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 
+@Entity
+@Table(name="cliente")
 public class Cliente {
 
+    @Id
+    @GeneratedValue(strategy= GenerationType.AUTO)
+    @Column(name = "id_cliente")
+    private Integer idCliente;
     private String nome;
     private String cognome;
     private Date dataNascita;
     private String luogoNascita;
     private String residenza;
     private String email;
+    @Column(name = "telefono")
     private String numeroTelefono;
-    private int idCliente;
+
+
+    public Cliente() {
+    }
 
     public Cliente(String nome, String cognome, Date dataNascita, String luogoNascita, String residenza, String email, String numeroTelefono) {
         this.nome = nome;
@@ -80,11 +91,11 @@ public class Cliente {
         this.numeroTelefono = numeroTelefono;
     }
 
-    public int getIdCliente() {
+    public Integer getIdCliente() {
         return idCliente;
     }
 
-    public void setIdCliente(int idCliente) {
+    public void setIdCliente(Integer idCliente) {
         this.idCliente = idCliente;
     }
 

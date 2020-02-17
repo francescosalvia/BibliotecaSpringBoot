@@ -1,12 +1,14 @@
 package com.contactlab.service;
 
-import com.contactlab.controller.BibliotecaController;
 import com.contactlab.dao.ClienteDao;
 import com.contactlab.dao.LibroDao;
 import com.contactlab.dao.PrenotazioneDao;
 import com.contactlab.data.Cliente;
 import com.contactlab.data.Libro;
 import com.contactlab.data.Prestito;
+import com.contactlab.repository.ClienteRepository;
+import com.contactlab.repository.LibroRepository;
+import com.contactlab.repository.PrestitoRepository;
 import com.google.i18n.phonenumbers.NumberParseException;
 import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
@@ -42,6 +44,18 @@ public class ServizioBiblioteca {
     @Autowired
     private PrenotazioneDao prenotazioneDao;
 
+    @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private LibroRepository libroRepository;
+
+    @Autowired
+    private PrestitoRepository prestitoRepository;
+
+
+
+
 
     /**
      * METODI UTILI
@@ -56,15 +70,15 @@ public class ServizioBiblioteca {
 
     public List<Cliente> trovaClienti() throws SQLException {
 
-        return clienteDao.getClienti();
+        return clienteRepository.findAll();
     }
 
     public List<Libro> trovaLibri() throws SQLException {
-        return libroDao.getLibro();
+        return libroRepository.findAll();
     }
 
     public List<Prestito> trovaPrestiti() throws SQLException {
-        return prenotazioneDao.getPrestito();
+        return prestitoRepository.findAll();
     }
 
 
@@ -89,13 +103,20 @@ public class ServizioBiblioteca {
                     String data = details[2];
                     String genere = details[3];
                     String disponibile = details[4];
+                    int dataa = Integer.parseInt(data);
+                   Optional<Libro> libroTrovato = libroRepository.findLibroByTitoloAndAutore(titolo,autore);
 
-                    Optional<Integer> idLibro = libroDao.getIdLibro(titolo, autore);
-
-                    if (idLibro.isPresent()) {
-                        libroDao.updateLibro(titolo, autore, data, genere, idLibro.get());  // disponibilità non la modifico per non influire su eventuali prestiti
+                    if (libroTrovato.isPresent()) {
+                    Libro libro = libroTrovato.get();
+                    libro.setAnno(dataa);
+                    libro.setAutore(autore);
+                    libro.setGenere(genere);
+                    libro.setTitolo(titolo);
+                     libroRepository.save(libro);// disponibilità non la modifico per non influire su eventuali prestiti
                     } else {
-                        libroDao.insertLibro(titolo, autore, data, genere, disponibile);
+                        Libro libro = new Libro(titolo,autore,dataa,genere,disponibile);
+                        libroRepository.save(libro);
+
                     }
                 }
             }
@@ -274,7 +295,7 @@ public class ServizioBiblioteca {
                 long days = ChronoUnit.DAYS.between(dataPrestito, dataOggi);
 
                 if (days > 30) {
-                    logger.info("Il prestito per l'utente con id : {} supera i 30 giorni", prestito.getIdUtente());
+                    logger.info("Il prestito per l'utente con id : {} supera i 30 giorni", prestito.getIdCliente());
                 } else {
                     logger.info("Il prestito non supera i 30 giorni");
                 }
@@ -371,7 +392,7 @@ public class ServizioBiblioteca {
 
         for (int i = 0; i < prestiti.size(); i++) {
 
-            Optional<Cliente> cliente = clienteDao.getClientiPerId(prestiti.get(i).getIdUtente());
+            Optional<Cliente> cliente = clienteDao.getClientiPerId(prestiti.get(i).getIdCliente());
             cliente.ifPresent(clienti::add);
         }
 
@@ -435,7 +456,7 @@ public class ServizioBiblioteca {
         for (int i = 0; i < prestiti.size(); i++) {
 
             Cliente cliente;
-            int idCliente = prestiti.get(i).getIdUtente();
+            int idCliente = prestiti.get(i).getIdCliente();
 
             Optional<Cliente> cliente2 = clienteDao.getClientiPerId(idCliente);
 
@@ -529,7 +550,7 @@ public class ServizioBiblioteca {
             for (int i = 0; i < prestiti.size(); i++) {
 
 
-                if (idCliente == prestiti.get(i).getIdUtente()) {
+                if (idCliente == prestiti.get(i).getIdCliente()) {
 
 
                     String genere;

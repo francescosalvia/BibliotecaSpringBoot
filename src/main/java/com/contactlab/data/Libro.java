@@ -1,16 +1,25 @@
 package com.contactlab.data;
 
+import javax.persistence.*;
 import java.util.Objects;
 
+@Entity
+@Table(name="libro")
 public class Libro {
 
+    @Id
+    @GeneratedValue(strategy= GenerationType.AUTO)
+    @Column(name = "id_libro")
+    private Integer idLibro;
     private String titolo;
     private String autore;
     private int anno;
     private String genere;
     private String disponibile;
-    private int idLibro;
 
+
+    public Libro() {
+    }
 
     public Libro(String titolo, String autore, int anno, String genere, String disponibile) {
         this.titolo = titolo;
@@ -53,11 +62,11 @@ public class Libro {
         this.genere = genere;
     }
 
-    public int getIdLibro() {
+    public Integer getIdLibro() {
         return idLibro;
     }
 
-    public void setIdLibro(int idLibro) {
+    public void setIdLibro(Integer idLibro) {
         this.idLibro = idLibro;
     }
 
